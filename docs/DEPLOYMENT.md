@@ -128,3 +128,28 @@ openssl s_client -connect exam-practice-app.vercel.app:443 -servername exam-prac
 ### Ce que ça donnerait en production (Railway)
 
 Railway capture automatiquement tout ce qui est écrit sur `stdout`/`stderr` (donc le transport Console de Winston) et l'affiche dans l'onglet "Logs" du service, avec recherche et filtrage — pas besoin de configuration supplémentaire pour avoir un flux de logs consultable en production. Pour un usage plus poussé (rétention longue durée, alertes sur des motifs d'erreur, recherche cross-service), une solution comme **Better Stack (Logtail)** ou **Axiom** peut recevoir les logs Winston via un transport HTTP dédié — non mis en place ici pour rester dans le tier gratuit, mais c'est l'évolution naturelle si le volume de logs augmente.
+
+## E26 — Supervision et alertes
+
+### Endpoint de santé
+
+`GET /api/health` (ajouté dans `backend/server.js`) renvoie l'état de l'application et de sa connexion à MongoDB :
+```json
+{ "status": "ok", "db": "connected", "uptime": 15.58, "timestamp": "2026-09-04T11:16:21.263Z" }
+```
+Code `200` si la base est connectée, `503` sinon (`status: "degraded"`) — c'est ce endpoint que n'importe quel outil de supervision externe doit interroger.
+
+### Outils de supervision proposés
+
+| Outil | Rôle | Coût |
+|---|---|---|
+| **UptimeRobot** | Ping `/api/health` (backend) et l'URL Vercel (frontend) toutes les 5 min, alerte email/Slack en cas d'échec | Gratuit (50 monitors) |
+| **Railway (natif)** | Métriques CPU/RAM/réseau par service, logs consultables, redémarrage auto en cas de crash | Inclus dans l'hébergement |
+| **Vercel Analytics (natif)** | Requêtes, bande passante, erreurs de build/fonction | Inclus dans le plan Hobby |
+| **Sentry** *(évolution possible)* | Tracking d'erreurs applicatives en temps réel avec alerte par erreur | Gratuit jusqu'à 5k erreurs/mois |
+
+### Alertes définies
+
+1. **API down** : UptimeRobot déclenche une alerte si `/api/health` répond en erreur (non-200) ou ne répond pas sur 2 vérifications consécutives (~10 min de détection).
+2. **Latence anormale** : UptimeRobot enregistre le temps de réponse à chaque ping ; alerte si le temps de réponse moyen dépasse 1 seconde sur une heure glissante (symptôme typique d'une base de données ou d'un service surchargé).
+3. **Taux d'erreur élevé côté backend** : grâce au logger Winston (E25), toute erreur applicative est écrite dans `logs/error.log` et visible dans les logs Railway. À ce stade (petit projet), la revue se fait manuellement dans le dashboard Railway ; l'évolution naturelle serait d'envoyer ces erreurs vers Sentry pour une alerte automatique dès qu'un nouveau type d'erreur apparaît ou qu'un taux d'erreur anormal est détecté.
