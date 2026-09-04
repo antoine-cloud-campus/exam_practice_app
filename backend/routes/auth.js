@@ -4,6 +4,16 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const Joi = require('joi');
 const User = require('../models/User');
+const auth = require('../middleware/auth');
+
+const setAuthCookie = (res, token) => {
+  res.cookie('token', token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 3600 * 1000,
+  });
+};
 
 const registerSchema = Joi.object({
   username: Joi.string().min(3).max(30).required(),
@@ -38,11 +48,7 @@ router.post('/register', async (req, res) => {
 
     await user.save();
 
-    const payload = { user: { id: user.id } };
-    jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: 3600 }, (err, token) => {
-      if (err) throw err;
-      res.json({ token });
-    });
+    res.json({ msg: 'Registration successful' });
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server Error');
@@ -71,15 +77,28 @@ router.post('/login', async (req, res) => {
     }
 
     const payload = { user: { id: user.id } };
-    // La durée de vie du token est peut-être trop longue pour certaines applications.
     jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: 3600 }, (err, token) => {
       if (err) throw err;
-      res.json({ token });
+      setAuthCookie(res, token);
+      res.json({ msg: 'Logged in' });
     });
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server Error');
   }
+});
+
+// @route   POST api/auth/logout
+// @desc    Clear the auth cookie
+router.post('/logout', (req, res) => {
+  res.clearCookie('token');
+  res.json({ msg: 'Logged out' });
+});
+
+// @route   GET api/auth/me
+// @desc    Check whether the current auth cookie is valid
+router.get('/me', auth, (req, res) => {
+  res.json({ user: req.user });
 });
 
 module.exports = router;

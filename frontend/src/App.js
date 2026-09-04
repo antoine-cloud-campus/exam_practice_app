@@ -7,6 +7,7 @@ import {
 } from "react-router-dom";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import api from "./api";
 
 // La page n'a pas de style cohérent
 // => ajouter un fichier CSS pour gérer les styles de la page
@@ -18,20 +19,23 @@ import Footer from "./components/Footer";
 
 // Comment pourrait-on gérer les routes protégées qui nécessitent d'être connecté ?
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(
-    !!localStorage.getItem("token")
-  );
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    setIsAuthenticated(!!token);
+    api
+      .get("/auth/me")
+      .then(() => setIsAuthenticated(true))
+      .catch(() => setIsAuthenticated(false));
   }, []);
 
   const handleLogin = () => setIsAuthenticated(true);
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    setIsAuthenticated(false);
+  const handleLogout = async () => {
+    try {
+      await api.post("/auth/logout");
+    } finally {
+      setIsAuthenticated(false);
+    }
   };
 
   return (

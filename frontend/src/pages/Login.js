@@ -12,8 +12,7 @@ const Login = ({ onLogin }) => {
     e.preventDefault();
     setError("");
     try {
-      const res = await api.post("/auth/login", { username, password });
-      localStorage.setItem("token", res.data.token);
+      await api.post("/auth/login", { username, password });
       if (onLogin) onLogin();
       navigate("/tasks");
     } catch (err) {

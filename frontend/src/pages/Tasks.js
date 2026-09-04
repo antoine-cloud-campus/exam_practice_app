@@ -8,16 +8,13 @@ const Tasks = () => {
   const navigate = useNavigate(); // Ajout
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      navigate("/login");
-      return;
-    }
     const fetchTasks = async () => {
-      const res = await api.get("/tasks", {
-        headers: { "x-auth-token": token },
-      });
-      setTasks(res.data);
+      try {
+        const res = await api.get("/tasks");
+        setTasks(res.data);
+      } catch (err) {
+        navigate("/login");
+      }
     };
     fetchTasks();
   }, [navigate]);
@@ -28,8 +25,7 @@ const Tasks = () => {
 
   const deleteTask = async (id) => {
     try {
-      const token = localStorage.getItem("token");
-      await api.delete(`/tasks/${id}`, { headers: { "x-auth-token": token } });
+      await api.delete(`/tasks/${id}`);
       setTasks(tasks.filter((task) => task._id !== id));
     } catch (err) {
       console.error(err);

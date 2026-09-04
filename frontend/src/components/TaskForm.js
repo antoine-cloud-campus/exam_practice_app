@@ -6,15 +6,8 @@ const TaskForm = ({ addTask }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const token = localStorage.getItem("token");
     try {
-      const res = await api.post(
-        "/tasks",
-        { title },
-        {
-          headers: { "x-auth-token": token },
-        }
-      );
+      const res = await api.post("/tasks", { title });
       addTask(res.data);
       setTitle("");
     } catch (err) {
