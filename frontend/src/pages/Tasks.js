@@ -1,11 +1,19 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom"; // Ajout
+import { useNavigate } from "react-router-dom";
 import api from "../api";
 import TaskForm from "../components/TaskForm";
 
+/**
+ * Authenticated user's task list page.
+ *
+ * Loads the current user's tasks from `GET /api/tasks` on mount (the auth
+ * cookie is sent automatically); if the request fails - typically a 401
+ * because there is no valid session - the user is redirected to `/login`
+ * instead of seeing an empty/broken page.
+ */
 const Tasks = () => {
   const [tasks, setTasks] = useState([]);
-  const navigate = useNavigate(); // Ajout
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchTasks = async () => {

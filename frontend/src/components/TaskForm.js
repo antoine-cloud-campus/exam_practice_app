@@ -1,6 +1,16 @@
 import React, { useState } from "react";
 import api from "../api";
 
+/**
+ * Form to create a new task for the authenticated user.
+ *
+ * Submits the title to `POST /api/tasks` (auth cookie sent automatically)
+ * and hands the created task back to the parent via `addTask` so it can
+ * be prepended to the task list without a full page reload.
+ *
+ * @param {Object} props
+ * @param {(task: Object) => void} props.addTask - Called with the newly created task document on success
+ */
 const TaskForm = ({ addTask }) => {
   const [title, setTitle] = useState("");
 
