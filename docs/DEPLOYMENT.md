@@ -113,3 +113,18 @@ openssl s_client -connect exam-practice-app.vercel.app:443 -servername exam-prac
 **Déploiement continu** : Vercel et Railway proposent tous les deux une intégration GitHub native (indépendante de ce pipeline Actions) — une fois le dépôt connecté dans leur dashboard respectif, chaque push sur `main` déclenche automatiquement un nouveau déploiement en production, et chaque push sur les autres branches génère un déploiement de preview/préproduction. Le pipeline CI ci-dessus sert de garde-fou qualité (audit de sécurité, tests, build) avant que ce déploiement automatique n'ait lieu.
 
 **Dépôt** : [github.com/antoine-cloud-campus/exam_practice_app](https://github.com/antoine-cloud-campus/exam_practice_app)
+
+## E25 — Journalisation et audit
+
+### Ce qui a été mis en place
+
+- Remplacement de tous les `console.log`/`console.error` du backend par un logger **Winston** (`backend/config/logger.js`) :
+  - format JSON structuré (timestamp, niveau, message, métadonnées) écrit dans `logs/error.log` (niveau `error` uniquement) et `logs/combined.log` (tout).
+  - sortie console en plus, colorée en développement, pour rester lisible en local et dans les logs du terminal du conteneur.
+  - niveau `debug` en développement, `info` en production (`NODE_ENV`).
+- **Journal d'audit HTTP** (`backend/middleware/requestLogger.js`) : chaque requête est loguée à la fin de son traitement avec méthode, URL, code de statut, durée, IP, et l'identifiant de l'utilisateur authentifié si présent — utile pour tracer qui a fait quoi (ex. quel utilisateur a supprimé quelle tâche, à quelle heure).
+- Testé en conditions réelles via `docker compose` : les logs applicatifs et le journal HTTP structuré apparaissent bien dans `logs/combined.log` à l'intérieur du conteneur.
+
+### Ce que ça donnerait en production (Railway)
+
+Railway capture automatiquement tout ce qui est écrit sur `stdout`/`stderr` (donc le transport Console de Winston) et l'affiche dans l'onglet "Logs" du service, avec recherche et filtrage — pas besoin de configuration supplémentaire pour avoir un flux de logs consultable en production. Pour un usage plus poussé (rétention longue durée, alertes sur des motifs d'erreur, recherche cross-service), une solution comme **Better Stack (Logtail)** ou **Axiom** peut recevoir les logs Winston via un transport HTTP dédié — non mis en place ici pour rester dans le tier gratuit, mais c'est l'évolution naturelle si le volume de logs augmente.
