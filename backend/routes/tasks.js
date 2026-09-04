@@ -38,18 +38,19 @@ router.post('/', auth, async (req, res) => {
 
 // @route   PUT api/tasks/:id
 // @desc    Update a task
-// N'importe quel utilisateur authentifié peut modifier la tâche de n'importe qui d'autre s'il connaît l'ID de la tâche.
-// Il manque une vérification pour s'assurer que la tâche appartient bien à l'utilisateur qui fait la requête.
 router.put('/:id', auth, async (req, res) => {
   const { title, description, isCompleted } = req.body;
-  
+
   try {
     let task = await Task.findById(req.params.id);
     if (!task) return res.status(404).json({ msg: 'Task not found' });
 
+    if (task.user.toString() !== req.user.id) {
+      return res.status(403).json({ msg: 'Not authorized' });
+    }
+
     task = await Task.findByIdAndUpdate(req.params.id, { $set: { title, description, isCompleted } }, { new: true });
-    
-    // Ici c'est corrigé, mais c'est un bug courant à surveiller.
+
     res.json(task);
   } catch (err) {
     console.error(err.message);
@@ -59,13 +60,16 @@ router.put('/:id', auth, async (req, res) => {
 
 // @route   DELETE api/tasks/:id
 // @desc    Delete a task
-// Un utilisateur peut supprimer les tâches des autres.
 router.delete('/:id', auth, async (req, res) => {
   try {
     let task = await Task.findById(req.params.id);
     if (!task) return res.status(404).json({ msg: 'Task not found' });
 
-    await Task.findByIdAndRemove(req.params.id);
+    if (task.user.toString() !== req.user.id) {
+      return res.status(403).json({ msg: 'Not authorized' });
+    }
+
+    await Task.findByIdAndDelete(req.params.id);
 
     res.json({ msg: 'Task removed' });
   } catch (err) {
