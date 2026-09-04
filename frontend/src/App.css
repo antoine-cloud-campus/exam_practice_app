@@ -56,6 +56,15 @@ h1 {
   background-color: #0056b3;
 }
 
+.error-message {
+  background-color: #f8d7da;
+  color: #842029;
+  border: 1px solid #f5c2c7;
+  border-radius: 4px;
+  padding: 10px 15px;
+  margin-bottom: 20px;
+}
+
 .task-list {
   list-style: none;
   padding: 0;
