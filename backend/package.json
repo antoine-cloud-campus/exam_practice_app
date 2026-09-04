@@ -18,6 +18,7 @@
   "overrides": {
     "path-to-regexp": "0.1.13",
     "qs": "6.16.0",
-    "ip-address": "10.7.0"
+    "ip-address": "10.7.0",
+    "body-parser": "1.20.6"
   }
 }
