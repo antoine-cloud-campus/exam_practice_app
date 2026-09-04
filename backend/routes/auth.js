@@ -6,6 +6,7 @@ const Joi = require('joi');
 const rateLimit = require('express-rate-limit');
 const User = require('../models/User');
 const auth = require('../middleware/auth');
+const logger = require('../config/logger');
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -59,7 +60,7 @@ router.post('/register', authLimiter, async (req, res) => {
 
     res.json({ msg: 'Registration successful' });
   } catch (err) {
-    console.error(err.message);
+    logger.error(err.message);
     res.status(500).send('Server Error');
   }
 });
@@ -92,7 +93,7 @@ router.post('/login', authLimiter, async (req, res) => {
       res.json({ msg: 'Logged in' });
     });
   } catch (err) {
-    console.error(err.message);
+    logger.error(err.message);
     res.status(500).send('Server Error');
   }
 });

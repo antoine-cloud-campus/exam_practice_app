@@ -3,6 +3,7 @@ const router = express.Router();
 const Joi = require('joi');
 const auth = require('../middleware/auth');
 const Task = require('../models/Task');
+const logger = require('../config/logger');
 
 const createTaskSchema = Joi.object({
   title: Joi.string().min(1).max(200).required(),
@@ -22,7 +23,7 @@ router.get('/', auth, async (req, res) => {
     const tasks = await Task.find({ user: req.user.id }).sort({ createdAt: -1 });
     res.json(tasks);
   } catch (err) {
-    console.error(err.message);
+    logger.error(err.message);
     res.status(500).send('Server Error');
   }
 });
@@ -47,7 +48,7 @@ router.post('/', auth, async (req, res) => {
     const task = await newTask.save();
     res.json(task);
   } catch (err) {
-    console.error(err.message);
+    logger.error(err.message);
     res.status(500).send('Server Error');
   }
 });
@@ -74,7 +75,7 @@ router.put('/:id', auth, async (req, res) => {
 
     res.json(task);
   } catch (err) {
-    console.error(err.message);
+    logger.error(err.message);
     res.status(500).send('Server Error');
   }
 });
@@ -94,7 +95,7 @@ router.delete('/:id', auth, async (req, res) => {
 
     res.json({ msg: 'Task removed' });
   } catch (err) {
-    console.error(err.message);
+    logger.error(err.message);
     res.status(500).send('Server Error');
   }
 });
