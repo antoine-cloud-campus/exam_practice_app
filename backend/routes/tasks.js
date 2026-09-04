@@ -16,8 +16,14 @@ const updateTaskSchema = Joi.object({
   isCompleted: Joi.boolean(),
 });
 
-// @route   GET api/tasks
-// @desc    Get all user tasks
+/**
+ * Get all tasks belonging to the authenticated user, most recent first.
+ *
+ * @route GET /api/tasks
+ * @access Private - requires a valid auth cookie
+ * @returns {Task[]} 200 - Array of task documents owned by the current user
+ * @returns {Object} 500 - `{ msg: 'Server Error' }` on unexpected failure
+ */
 router.get('/', auth, async (req, res) => {
   try {
     const tasks = await Task.find({ user: req.user.id }).sort({ createdAt: -1 });
@@ -28,8 +34,17 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
-// @route   POST api/tasks
-// @desc    Add a new task
+/**
+ * Create a new task owned by the authenticated user.
+ *
+ * @route POST /api/tasks
+ * @access Private - requires a valid auth cookie
+ * @param {string} req.body.title - Task title (1-200 characters, required)
+ * @param {string} [req.body.description] - Task description (up to 1000 characters)
+ * @returns {Task} 200 - The newly created task document
+ * @returns {Object} 400 - `{ msg }` when the payload fails Joi validation
+ * @returns {Object} 500 - `{ msg: 'Server Error' }` on unexpected failure
+ */
 router.post('/', auth, async (req, res) => {
   const { error } = createTaskSchema.validate(req.body);
   if (error) {
@@ -53,8 +68,21 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
-// @route   PUT api/tasks/:id
-// @desc    Update a task
+/**
+ * Update a task, provided it belongs to the authenticated user.
+ *
+ * @route PUT /api/tasks/:id
+ * @access Private - requires a valid auth cookie and ownership of the task
+ * @param {string} req.params.id - MongoDB ObjectId of the task to update
+ * @param {string} [req.body.title] - New title (1-200 characters)
+ * @param {string} [req.body.description] - New description (up to 1000 characters)
+ * @param {boolean} [req.body.isCompleted] - New completion state
+ * @returns {Task} 200 - The updated task document
+ * @returns {Object} 400 - `{ msg }` when the payload fails Joi validation
+ * @returns {Object} 403 - `{ msg: 'Not authorized' }` if the task belongs to another user
+ * @returns {Object} 404 - `{ msg: 'Task not found' }` if the id does not exist
+ * @returns {Object} 500 - `{ msg: 'Server Error' }` on unexpected failure
+ */
 router.put('/:id', auth, async (req, res) => {
   const { error } = updateTaskSchema.validate(req.body);
   if (error) {
@@ -80,8 +108,17 @@ router.put('/:id', auth, async (req, res) => {
   }
 });
 
-// @route   DELETE api/tasks/:id
-// @desc    Delete a task
+/**
+ * Delete a task, provided it belongs to the authenticated user.
+ *
+ * @route DELETE /api/tasks/:id
+ * @access Private - requires a valid auth cookie and ownership of the task
+ * @param {string} req.params.id - MongoDB ObjectId of the task to delete
+ * @returns {Object} 200 - `{ msg: 'Task removed' }`
+ * @returns {Object} 403 - `{ msg: 'Not authorized' }` if the task belongs to another user
+ * @returns {Object} 404 - `{ msg: 'Task not found' }` if the id does not exist
+ * @returns {Object} 500 - `{ msg: 'Server Error' }` on unexpected failure
+ */
 router.delete('/:id', auth, async (req, res) => {
   try {
     let task = await Task.findById(req.params.id);

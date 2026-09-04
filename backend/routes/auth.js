@@ -35,8 +35,18 @@ const loginSchema = Joi.object({
   password: Joi.string().required(),
 });
 
-// @route   POST api/auth/register
-// @desc    Register a new user
+/**
+ * Register a new user account.
+ *
+ * @route POST /api/auth/register
+ * @access Public - rate-limited to 10 requests / 15 min per IP
+ * @param {string} req.body.username - Desired username (3-30 characters, required)
+ * @param {string} req.body.password - Password (min 8 characters, required, hashed with bcrypt before storage)
+ * @returns {Object} 200 - `{ msg: 'Registration successful' }`
+ * @returns {Object} 400 - `{ msg }` when validation fails or the username is already taken
+ * @returns {Object} 429 - Too many attempts from this IP
+ * @returns {Object} 500 - `{ msg: 'Server Error' }` on unexpected failure
+ */
 router.post('/register', authLimiter, async (req, res) => {
   const { error } = registerSchema.validate(req.body);
   if (error) {
@@ -65,8 +75,18 @@ router.post('/register', authLimiter, async (req, res) => {
   }
 });
 
-// @route   POST api/auth/login
-// @desc    Authenticate user & get token
+/**
+ * Authenticate a user and issue a JWT as an httpOnly auth cookie.
+ *
+ * @route POST /api/auth/login
+ * @access Public - rate-limited to 10 requests / 15 min per IP
+ * @param {string} req.body.username - Account username
+ * @param {string} req.body.password - Account password
+ * @returns {Object} 200 - `{ msg: 'Logged in' }`, sets a `token` httpOnly cookie (1h expiry)
+ * @returns {Object} 400 - `{ msg: 'Invalid credentials' }` or a Joi validation message
+ * @returns {Object} 429 - Too many attempts from this IP
+ * @returns {Object} 500 - `{ msg: 'Server Error' }` on unexpected failure
+ */
 router.post('/login', authLimiter, async (req, res) => {
   const { error } = loginSchema.validate(req.body);
   if (error) {
@@ -98,15 +118,28 @@ router.post('/login', authLimiter, async (req, res) => {
   }
 });
 
-// @route   POST api/auth/logout
-// @desc    Clear the auth cookie
+/**
+ * Log the current user out by clearing the auth cookie.
+ * The cookie is httpOnly, so it can only be cleared server-side.
+ *
+ * @route POST /api/auth/logout
+ * @access Public
+ * @returns {Object} 200 - `{ msg: 'Logged out' }`
+ */
 router.post('/logout', (req, res) => {
   res.clearCookie('token');
   res.json({ msg: 'Logged out' });
 });
 
-// @route   GET api/auth/me
-// @desc    Check whether the current auth cookie is valid
+/**
+ * Check whether the current auth cookie is present and valid.
+ * Used by the frontend on load to determine authentication state.
+ *
+ * @route GET /api/auth/me
+ * @access Private - requires a valid auth cookie
+ * @returns {Object} 200 - `{ user: { id } }` decoded from the JWT
+ * @returns {Object} 401 - No token or an invalid/expired token
+ */
 router.get('/me', auth, (req, res) => {
   res.json({ user: req.user });
 });
