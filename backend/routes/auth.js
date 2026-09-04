@@ -38,6 +38,8 @@ const loginSchema = Joi.object({
 /**
  * Register a new user account.
  *
+ * @function register
+ * @memberof module:routes/auth
  * @route POST /api/auth/register
  * @access Public - rate-limited to 10 requests / 15 min per IP
  * @param {string} req.body.username - Desired username (3-30 characters, required)
@@ -47,7 +49,7 @@ const loginSchema = Joi.object({
  * @returns {Object} 429 - Too many attempts from this IP
  * @returns {Object} 500 - `{ msg: 'Server Error' }` on unexpected failure
  */
-router.post('/register', authLimiter, async (req, res) => {
+async function register(req, res) {
   const { error } = registerSchema.validate(req.body);
   if (error) {
     return res.status(400).json({ msg: error.details[0].message });
@@ -73,11 +75,13 @@ router.post('/register', authLimiter, async (req, res) => {
     logger.error(err.message);
     res.status(500).send('Server Error');
   }
-});
+}
 
 /**
  * Authenticate a user and issue a JWT as an httpOnly auth cookie.
  *
+ * @function login
+ * @memberof module:routes/auth
  * @route POST /api/auth/login
  * @access Public - rate-limited to 10 requests / 15 min per IP
  * @param {string} req.body.username - Account username
@@ -87,7 +91,7 @@ router.post('/register', authLimiter, async (req, res) => {
  * @returns {Object} 429 - Too many attempts from this IP
  * @returns {Object} 500 - `{ msg: 'Server Error' }` on unexpected failure
  */
-router.post('/login', authLimiter, async (req, res) => {
+async function login(req, res) {
   const { error } = loginSchema.validate(req.body);
   if (error) {
     return res.status(400).json({ msg: error.details[0].message });
@@ -116,32 +120,41 @@ router.post('/login', authLimiter, async (req, res) => {
     logger.error(err.message);
     res.status(500).send('Server Error');
   }
-});
+}
 
 /**
  * Log the current user out by clearing the auth cookie.
  * The cookie is httpOnly, so it can only be cleared server-side.
  *
+ * @function logout
+ * @memberof module:routes/auth
  * @route POST /api/auth/logout
  * @access Public
  * @returns {Object} 200 - `{ msg: 'Logged out' }`
  */
-router.post('/logout', (req, res) => {
+function logout(req, res) {
   res.clearCookie('token');
   res.json({ msg: 'Logged out' });
-});
+}
 
 /**
  * Check whether the current auth cookie is present and valid.
  * Used by the frontend on load to determine authentication state.
  *
+ * @function me
+ * @memberof module:routes/auth
  * @route GET /api/auth/me
  * @access Private - requires a valid auth cookie
  * @returns {Object} 200 - `{ user: { id } }` decoded from the JWT
  * @returns {Object} 401 - No token or an invalid/expired token
  */
-router.get('/me', auth, (req, res) => {
+function me(req, res) {
   res.json({ user: req.user });
-});
+}
+
+router.post('/register', authLimiter, register);
+router.post('/login', authLimiter, login);
+router.post('/logout', logout);
+router.get('/me', auth, me);
 
 module.exports = router;

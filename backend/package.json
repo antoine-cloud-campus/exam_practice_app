@@ -4,7 +4,8 @@
   "description": "Backend for the Task Management App",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "docs": "jsdoc -c jsdoc.json"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -24,5 +25,8 @@
     "qs": "6.16.0",
     "ip-address": "10.7.0",
     "body-parser": "1.20.6"
+  },
+  "devDependencies": {
+    "jsdoc": "^4.0.5"
   }
 }

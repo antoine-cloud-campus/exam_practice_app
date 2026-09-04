@@ -19,12 +19,14 @@ const updateTaskSchema = Joi.object({
 /**
  * Get all tasks belonging to the authenticated user, most recent first.
  *
+ * @function getTasks
+ * @memberof module:routes/tasks
  * @route GET /api/tasks
  * @access Private - requires a valid auth cookie
  * @returns {Task[]} 200 - Array of task documents owned by the current user
  * @returns {Object} 500 - `{ msg: 'Server Error' }` on unexpected failure
  */
-router.get('/', auth, async (req, res) => {
+async function getTasks(req, res) {
   try {
     const tasks = await Task.find({ user: req.user.id }).sort({ createdAt: -1 });
     res.json(tasks);
@@ -32,11 +34,13 @@ router.get('/', auth, async (req, res) => {
     logger.error(err.message);
     res.status(500).send('Server Error');
   }
-});
+}
 
 /**
  * Create a new task owned by the authenticated user.
  *
+ * @function createTask
+ * @memberof module:routes/tasks
  * @route POST /api/tasks
  * @access Private - requires a valid auth cookie
  * @param {string} req.body.title - Task title (1-200 characters, required)
@@ -45,7 +49,7 @@ router.get('/', auth, async (req, res) => {
  * @returns {Object} 400 - `{ msg }` when the payload fails Joi validation
  * @returns {Object} 500 - `{ msg: 'Server Error' }` on unexpected failure
  */
-router.post('/', auth, async (req, res) => {
+async function createTask(req, res) {
   const { error } = createTaskSchema.validate(req.body);
   if (error) {
     return res.status(400).json({ msg: error.details[0].message });
@@ -66,11 +70,13 @@ router.post('/', auth, async (req, res) => {
     logger.error(err.message);
     res.status(500).send('Server Error');
   }
-});
+}
 
 /**
  * Update a task, provided it belongs to the authenticated user.
  *
+ * @function updateTask
+ * @memberof module:routes/tasks
  * @route PUT /api/tasks/:id
  * @access Private - requires a valid auth cookie and ownership of the task
  * @param {string} req.params.id - MongoDB ObjectId of the task to update
@@ -83,7 +89,7 @@ router.post('/', auth, async (req, res) => {
  * @returns {Object} 404 - `{ msg: 'Task not found' }` if the id does not exist
  * @returns {Object} 500 - `{ msg: 'Server Error' }` on unexpected failure
  */
-router.put('/:id', auth, async (req, res) => {
+async function updateTask(req, res) {
   const { error } = updateTaskSchema.validate(req.body);
   if (error) {
     return res.status(400).json({ msg: error.details[0].message });
@@ -106,11 +112,13 @@ router.put('/:id', auth, async (req, res) => {
     logger.error(err.message);
     res.status(500).send('Server Error');
   }
-});
+}
 
 /**
  * Delete a task, provided it belongs to the authenticated user.
  *
+ * @function deleteTask
+ * @memberof module:routes/tasks
  * @route DELETE /api/tasks/:id
  * @access Private - requires a valid auth cookie and ownership of the task
  * @param {string} req.params.id - MongoDB ObjectId of the task to delete
@@ -119,7 +127,7 @@ router.put('/:id', auth, async (req, res) => {
  * @returns {Object} 404 - `{ msg: 'Task not found' }` if the id does not exist
  * @returns {Object} 500 - `{ msg: 'Server Error' }` on unexpected failure
  */
-router.delete('/:id', auth, async (req, res) => {
+async function deleteTask(req, res) {
   try {
     let task = await Task.findById(req.params.id);
     if (!task) return res.status(404).json({ msg: 'Task not found' });
@@ -135,6 +143,11 @@ router.delete('/:id', auth, async (req, res) => {
     logger.error(err.message);
     res.status(500).send('Server Error');
   }
-});
+}
+
+router.get('/', auth, getTasks);
+router.post('/', auth, createTask);
+router.put('/:id', auth, updateTask);
+router.delete('/:id', auth, deleteTask);
 
 module.exports = router;
