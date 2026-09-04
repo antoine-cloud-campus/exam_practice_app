@@ -13,11 +13,18 @@ const Header = ({ isAuthenticated, onLogout }) => {
             </Link>
           </li>
           {!isAuthenticated ? (
-            <li className="nav-item">
-              <Link to="/login" className="nav-link">
-                Connexion
-              </Link>
-            </li>
+            <>
+              <li className="nav-item">
+                <Link to="/login" className="nav-link">
+                  Connexion
+                </Link>
+              </li>
+              <li className="nav-item">
+                <Link to="/register" className="nav-link">
+                  Inscription
+                </Link>
+              </li>
+            </>
           ) : (
             <li className="nav-item">
               <button onClick={onLogout} className="nav-link">

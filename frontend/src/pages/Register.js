@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import api from '../api';
 
 const Register = () => {
@@ -34,6 +34,9 @@ const Register = () => {
         </div>
         <button type="submit" className="btn">Register</button>
       </form>
+      <p>
+        Déjà un compte ? <Link to="/login">Se connecter</Link>
+      </p>
     </div>
   );
 };
