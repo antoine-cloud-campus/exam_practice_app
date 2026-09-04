@@ -60,3 +60,35 @@ Cette architecture permet nativement de séparer préproduction et production (v
   - Créer un utilisateur de base de données dédié à l'application, avec des droits limités à la base `exam_practice_db` (pas de rôle `admin`/`root`).
   - Restreindre l'accès réseau (Network Access) aux IP sortantes de Railway plutôt qu'à `0.0.0.0/0`, quand Railway fournit une IP sortante stable sur le plan utilisé.
 - **Vercel** : aucune variable sensible nécessaire côté frontend (l'URL de l'API backend suffit, elle n'est pas secrète).
+
+## E23 — Nom de domaine, DNS et certificats
+
+Un nom de domaine personnalisé (`.com`, `.fr`...) est payant (~8-15 €/an) et n'apporte pas de valeur pédagogique supplémentaire pour ce projet d'entraînement. Vercel et Railway fournissent chacun un sous-domaine gratuit avec HTTPS déjà géré automatiquement — c'est ce qui est retenu ici.
+
+### Sous-domaines retenus
+
+| Environnement | Frontend (Vercel) | Backend (Railway) |
+|---|---|---|
+| Production | `exam-practice-app.vercel.app` | `exam-practice-app-production.up.railway.app` |
+| Préproduction | `exam-practice-app-git-develop.vercel.app` (preview auto par branche) | `exam-practice-app-staging.up.railway.app` |
+
+### Fonctionnement DNS
+
+Avec des sous-domaines de plateforme, la zone DNS est entièrement gérée par Vercel/Railway : aucun enregistrement à créer manuellement, l'attribution `sous-domaine → conteneur applicatif` est automatique dès la connexion du dépôt Git au service.
+
+Si un nom de domaine personnalisé était ajouté plus tard, la procédure serait :
+1. Acheter le domaine chez un registrar (OVH, Gandi, Namecheap...).
+2. Dans Vercel/Railway, ajouter le domaine personnalisé au projet : la plateforme fournit un enregistrement DNS à créer (`CNAME` pointant vers le sous-domaine de la plateforme, ou `A` vers son IP).
+3. Créer cet enregistrement chez le registrar (ex. `app.mondomaine.fr CNAME cname.vercel-dns.com`).
+4. Attendre la propagation DNS (quelques minutes à 24h), la plateforme détecte automatiquement le domaine validé.
+
+### Certificats HTTPS
+
+Vercel et Railway émettent et renouvellent automatiquement un certificat **Let's Encrypt** dès qu'un domaine (par défaut ou personnalisé) est validé — aucune manipulation `certbot` n'est nécessaire, contrairement à un VPS auto-géré (voir E21).
+
+**Vérification du certificat** une fois l'application déployée (E24) :
+```bash
+curl -vI https://exam-practice-app.vercel.app 2>&1 | grep -i "SSL certificate"
+# ou, pour le détail complet (émetteur, date d'expiration) :
+openssl s_client -connect exam-practice-app.vercel.app:443 -servername exam-practice-app.vercel.app </dev/null 2>/dev/null | openssl x509 -noout -issuer -dates
+```
