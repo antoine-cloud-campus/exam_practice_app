@@ -16,11 +16,13 @@ const authLimiter = rateLimit({
   message: { msg: 'Too many attempts, please try again later' },
 });
 
+const isProduction = process.env.NODE_ENV === 'production';
+
 const setAuthCookie = (res, token) => {
   res.cookie('token', token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax',
     maxAge: 3600 * 1000,
   });
 };
@@ -133,7 +135,7 @@ async function login(req, res) {
  * @returns {Object} 200 - `{ msg: 'Logged out' }`
  */
 function logout(req, res) {
-  res.clearCookie('token');
+  res.clearCookie('token', { httpOnly: true, secure: isProduction, sameSite: isProduction ? 'none' : 'lax' });
   res.json({ msg: 'Logged out' });
 }
 
