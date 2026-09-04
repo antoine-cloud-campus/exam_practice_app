@@ -1,7 +1,19 @@
 const express = require('express');
 const router = express.Router();
+const Joi = require('joi');
 const auth = require('../middleware/auth');
 const Task = require('../models/Task');
+
+const createTaskSchema = Joi.object({
+  title: Joi.string().min(1).max(200).required(),
+  description: Joi.string().max(1000).allow('').optional(),
+});
+
+const updateTaskSchema = Joi.object({
+  title: Joi.string().min(1).max(200),
+  description: Joi.string().max(1000).allow(''),
+  isCompleted: Joi.boolean(),
+});
 
 // @route   GET api/tasks
 // @desc    Get all user tasks
@@ -18,9 +30,13 @@ router.get('/', auth, async (req, res) => {
 // @route   POST api/tasks
 // @desc    Add a new task
 router.post('/', auth, async (req, res) => {
+  const { error } = createTaskSchema.validate(req.body);
+  if (error) {
+    return res.status(400).json({ msg: error.details[0].message });
+  }
+
   const { title, description } = req.body;
 
-  // Un utilisateur pourrait injecter du HTML ou du script dans la description.
   try {
     const newTask = new Task({
       title,
@@ -39,6 +55,11 @@ router.post('/', auth, async (req, res) => {
 // @route   PUT api/tasks/:id
 // @desc    Update a task
 router.put('/:id', auth, async (req, res) => {
+  const { error } = updateTaskSchema.validate(req.body);
+  if (error) {
+    return res.status(400).json({ msg: error.details[0].message });
+  }
+
   const { title, description, isCompleted } = req.body;
 
   try {

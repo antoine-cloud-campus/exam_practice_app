@@ -2,17 +2,28 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const Joi = require('joi');
 const User = require('../models/User');
+
+const registerSchema = Joi.object({
+  username: Joi.string().min(3).max(30).required(),
+  password: Joi.string().min(8).required(),
+});
+
+const loginSchema = Joi.object({
+  username: Joi.string().required(),
+  password: Joi.string().required(),
+});
 
 // @route   POST api/auth/register
 // @desc    Register a new user
 router.post('/register', async (req, res) => {
-  const { username, password } = req.body;
-
-  // Un mot de passe vide ou un nom d'utilisateur trop court sont acceptés.
-  if (!username || !password) {
-    return res.status(400).json({ msg: 'Please enter all fields' });
+  const { error } = registerSchema.validate(req.body);
+  if (error) {
+    return res.status(400).json({ msg: error.details[0].message });
   }
+
+  const { username, password } = req.body;
 
   try {
     let user = await User.findOne({ username });
@@ -41,10 +52,14 @@ router.post('/register', async (req, res) => {
 // @route   POST api/auth/login
 // @desc    Authenticate user & get token
 router.post('/login', async (req, res) => {
+  const { error } = loginSchema.validate(req.body);
+  if (error) {
+    return res.status(400).json({ msg: error.details[0].message });
+  }
+
   const { username, password } = req.body;
-  
+
   try {
-    // Le message d'erreur est trop générique et ne guide pas l'utilisateur.
     let user = await User.findOne({ username });
     if (!user) {
       return res.status(400).json({ msg: 'Invalid credentials' });
