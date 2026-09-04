@@ -1,8 +1,15 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import "./Header.css";
 
 const Header = ({ isAuthenticated, onLogout }) => {
+  const navigate = useNavigate();
+
+  const handleLogoutClick = async () => {
+    await onLogout();
+    navigate("/login");
+  };
+
   return (
     <header className="header">
       <nav>
@@ -27,7 +34,7 @@ const Header = ({ isAuthenticated, onLogout }) => {
             </>
           ) : (
             <li className="nav-item">
-              <button onClick={onLogout} className="nav-link">
+              <button onClick={handleLogoutClick} className="nav-link">
                 Déconnexion
               </button>
             </li>
