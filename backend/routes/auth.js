@@ -3,8 +3,17 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const Joi = require('joi');
+const rateLimit = require('express-rate-limit');
 const User = require('../models/User');
 const auth = require('../middleware/auth');
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { msg: 'Too many attempts, please try again later' },
+});
 
 const setAuthCookie = (res, token) => {
   res.cookie('token', token, {
@@ -27,7 +36,7 @@ const loginSchema = Joi.object({
 
 // @route   POST api/auth/register
 // @desc    Register a new user
-router.post('/register', async (req, res) => {
+router.post('/register', authLimiter, async (req, res) => {
   const { error } = registerSchema.validate(req.body);
   if (error) {
     return res.status(400).json({ msg: error.details[0].message });
@@ -57,7 +66,7 @@ router.post('/register', async (req, res) => {
 
 // @route   POST api/auth/login
 // @desc    Authenticate user & get token
-router.post('/login', async (req, res) => {
+router.post('/login', authLimiter, async (req, res) => {
   const { error } = loginSchema.validate(req.body);
   if (error) {
     return res.status(400).json({ msg: error.details[0].message });

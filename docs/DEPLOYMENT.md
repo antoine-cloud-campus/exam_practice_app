@@ -42,3 +42,21 @@ Cette architecture permet nativement de séparer préproduction et production (v
 - **Vercel** : chaque Pull Request génère un déploiement de preview isolé ; la branche `main` déploie en production.
 - **Railway** : deux services distincts dans le même projet (`backend-staging` et `backend-production`), chacun avec ses propres variables d'environnement (`MONGO_URI`, `JWT_SECRET`, `FRONTEND_URL`).
 - **MongoDB Atlas** : deux bases séparées sur le même cluster M0 (`exam_practice_db_staging` et `exam_practice_db`), ou deux clusters M0 si l'isolation complète est préférée.
+
+## E22 — Sécurisation de l'environnement de production
+
+### Mesures appliquées dans le code
+
+- **Headers HTTP de sécurité** (`helmet`) : ajouté dans `server.js`, protège contre le clickjacking, force `X-Content-Type-Options`, désactive la divulgation de la stack technique via les headers par défaut d'Express.
+- **Rate limiting anti brute-force** (`express-rate-limit`) : `/api/auth/login` et `/api/auth/register` sont limités à 10 tentatives par IP toutes les 15 minutes.
+- **`app.set('trust proxy', 1)`** : nécessaire en production car Railway/Vercel terminent le TLS et transmettent la requête via un reverse proxy interne. Sans ce réglage, `express-rate-limit` limiterait par l'IP du proxy (donc tout le monde en même temps) au lieu de l'IP réelle du client, et le flag `secure` du cookie de session ne serait pas fiable.
+- **Cookie d'authentification `httpOnly` + `secure` en production** : déjà en place depuis E28 (`backend/routes/auth.js`), `secure: true` n'est actif que lorsque `NODE_ENV=production`.
+- **Secrets hors du code** : `.env` non versionné, `.env.example` documente les variables attendues (voir E28).
+
+### Configuration à faire au niveau des plateformes (à faire lors du déploiement réel, E24)
+
+- **Railway** : définir `NODE_ENV=production`, `JWT_SECRET` (valeur forte, différente de celle du `.env` local), `MONGO_URI` (pointant vers Atlas) et `FRONTEND_URL` (URL Vercel de production) dans les variables d'environnement du service — jamais dans le code.
+- **MongoDB Atlas** :
+  - Créer un utilisateur de base de données dédié à l'application, avec des droits limités à la base `exam_practice_db` (pas de rôle `admin`/`root`).
+  - Restreindre l'accès réseau (Network Access) aux IP sortantes de Railway plutôt qu'à `0.0.0.0/0`, quand Railway fournit une IP sortante stable sur le plan utilisé.
+- **Vercel** : aucune variable sensible nécessaire côté frontend (l'URL de l'API backend suffit, elle n'est pas secrète).
