@@ -92,3 +92,24 @@ curl -vI https://exam-practice-app.vercel.app 2>&1 | grep -i "SSL certificate"
 # ou, pour le détail complet (émetteur, date d'expiration) :
 openssl s_client -connect exam-practice-app.vercel.app:443 -servername exam-practice-app.vercel.app </dev/null 2>/dev/null | openssl x509 -noout -issuer -dates
 ```
+
+## E24 — Conteneurisation et CI/CD
+
+### Conteneurisation
+
+- `backend/Dockerfile` : image `node:20-alpine`, installe les dépendances de production uniquement (`npm ci --omit=dev`), expose le port 5000.
+- `frontend/Dockerfile` : build multi-étapes — l'étape `build` compile l'app React (`npm run build`), l'étape finale sert les fichiers statiques avec `nginx:alpine`. `frontend/nginx.conf` gère le fallback SPA (`try_files ... /index.html`) pour que les routes React Router (`/login`, `/tasks`...) fonctionnent au rechargement de page.
+- `docker-compose.yml` orchestre 3 services : `mongo` (avec volume nommé pour la persistance des données), `backend` et `frontend`, avec un réseau Docker partagé.
+- Testé en conditions réelles en local (`docker compose up --build`) : les 3 conteneurs démarrent, le backend se connecte à MongoDB, et le flux complet register → login → cookie httpOnly → CRUD tâches → IDOR bloquée (403) → rate limiting (429) a été vérifié via `curl` directement contre les conteneurs.
+
+### CI/CD
+
+`.github/workflows/ci-cd.yml` définit le pipeline, déclenché sur chaque `push`/`pull_request` vers `main` ou `develop` :
+
+1. **Job `backend`** : installe les dépendances, exécute `npm audit --audit-level=high` (bloque le pipeline si une vulnérabilité haute/critique est introduite), vérifie la syntaxe du point d'entrée.
+2. **Job `frontend`** : installe les dépendances, exécute les tests (`--passWithNoTests` car le projet n'a pas encore de suite de tests — point à améliorer), build de production.
+3. **Job `docker-build`** : build les deux images Docker pour garantir que les `Dockerfile` restent valides à chaque changement.
+
+**Déploiement continu** : Vercel et Railway proposent tous les deux une intégration GitHub native (indépendante de ce pipeline Actions) — une fois le dépôt connecté dans leur dashboard respectif, chaque push sur `main` déclenche automatiquement un nouveau déploiement en production, et chaque push sur les autres branches génère un déploiement de preview/préproduction. Le pipeline CI ci-dessus sert de garde-fou qualité (audit de sécurité, tests, build) avant que ce déploiement automatique n'ait lieu.
+
+**Dépôt** : [github.com/antoine-cloud-campus/exam_practice_app](https://github.com/antoine-cloud-campus/exam_practice_app)
