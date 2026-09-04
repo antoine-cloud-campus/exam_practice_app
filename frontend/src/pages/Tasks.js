@@ -23,6 +23,7 @@ const Tasks = () => {
   }, [navigate]);
 
   const addTask = (task) => {
+    setTasks([task, ...tasks]);
   };
 
   const deleteTask = async (id) => {
