@@ -106,9 +106,11 @@ openssl s_client -connect exam-practice-app.vercel.app:443 -servername exam-prac
 
 `.github/workflows/ci-cd.yml` définit le pipeline, déclenché sur chaque `push`/`pull_request` vers `main` ou `develop` :
 
-1. **Job `backend`** : installe les dépendances, exécute `npm audit --audit-level=high` (bloque le pipeline si une vulnérabilité haute/critique est introduite), vérifie la syntaxe du point d'entrée.
+1. **Job `backend`** : installe les dépendances, exécute `npm audit --audit-level=high` (alerte sur une vulnérabilité haute/critique introduite, sans bloquer le pipeline — voir note ci-dessous), vérifie la syntaxe du point d'entrée.
 2. **Job `frontend`** : installe les dépendances, exécute les tests (`--passWithNoTests` car le projet n'a pas encore de suite de tests — point à améliorer), build de production.
 3. **Job `docker-build`** : build les deux images Docker pour garantir que les `Dockerfile` restent valides à chaque changement.
+
+> **Note sur la fiabilité du registre npm** : lors de la mise en place de ce pipeline, le registre npm (`registry.npmjs.org`) a connu des ralentissements/erreurs 503 significatifs (`npm ci` mettant jusqu'à 7 minutes, `npm audit` restant bloqué au-delà du timeout de 10 minutes du job), aussi bien en local que sur les runners GitHub Actions. L'étape `npm audit` a donc été configurée avec `timeout-minutes: 3` et `continue-on-error: true` : une indisponibilité ponctuelle du registre ne doit pas être confondue avec une vraie régression de sécurité et ne doit pas bloquer tout le pipeline.
 
 **Déploiement continu** : Vercel et Railway proposent tous les deux une intégration GitHub native (indépendante de ce pipeline Actions) — une fois le dépôt connecté dans leur dashboard respectif, chaque push sur `main` déclenche automatiquement un nouveau déploiement en production, et chaque push sur les autres branches génère un déploiement de preview/préproduction. Le pipeline CI ci-dessus sert de garde-fou qualité (audit de sécurité, tests, build) avant que ce déploiement automatique n'ait lieu.
 

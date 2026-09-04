@@ -22,6 +22,8 @@ jobs:
           cache-dependency-path: backend/package-lock.json
       - run: npm ci
       - run: npm audit --audit-level=high
+        timeout-minutes: 3
+        continue-on-error: true
       - run: node --check server.js
 
   frontend:
